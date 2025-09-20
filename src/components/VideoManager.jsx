@@ -192,6 +192,7 @@ export default function VideoManager() {
   }
 
   // Load from localStorage and seed if first run (or empty array was saved previously)
+  // Use functional setItems so we don't overwrite items added very early (e.g., via Web Share Target)
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
@@ -199,17 +200,17 @@ export default function VideoManager() {
       if (raw) {
         const parsed = JSON.parse(raw)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setItems(parsed)
+          setItems((prev) => (prev && prev.length ? prev : parsed))
         } else if (!seededFlag) {
           const seeded = buildSamples()
-          setItems(seeded)
+          setItems((prev) => (prev && prev.length ? prev : seeded))
           localStorage.setItem(FIRST_RUN_KEY, '1')
         } else {
-          setItems([])
+          setItems((prev) => (prev && prev.length ? prev : []))
         }
       } else if (!seededFlag) {
         const seeded = buildSamples()
-        setItems(seeded)
+        setItems((prev) => (prev && prev.length ? prev : seeded))
         localStorage.setItem(FIRST_RUN_KEY, '1')
       }
     } catch {}
@@ -250,15 +251,19 @@ export default function VideoManager() {
       setError('지원되지 않는 URL 형식입니다')
       return false
     }
-    if (items.some((it) => it.url === normalized)) {
-      setError('이미 등록된 URL입니다')
-      return false
-    }
     const now = new Date().toISOString()
     const newItem = { id: crypto.randomUUID(), url: normalized, createdAt: now, pinned: false, title: '', thumbnail: '', provider: '', tags: [], note: '' }
-    setItems([newItem, ...items])
-    setError('')
-    return true
+    let added = false
+    setItems((prev) => {
+      if (prev.some((it) => it.url === normalized)) {
+        setError('이미 등록된 URL입니다')
+        return prev
+      }
+      added = true
+      setError('')
+      return [newItem, ...prev]
+    })
+    return added
   }
 
   const onAdd = async (e) => {
