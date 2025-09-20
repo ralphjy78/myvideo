@@ -225,3 +225,10 @@ Share Target POST 방식(Level 2) 전환(파일 공유 확대용)
 안드로이드 네이티브 “공유 대상” 앱(웹뷰 + 딥링크) 제작 옵션 안내
 원하시면 지금 바로 빌드/프리뷰를 실행하고, Vercel 또는 Netlify로 배포까지 마무리해 드릴게요. 어느 배포 플랫폼을 선호하시나요?
 
+
+
+git remote add origin https://github.com/ralphjy78/myvideo
+
+
+
+
