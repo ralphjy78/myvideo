@@ -162,20 +162,6 @@ export default function VideoManager() {
   const [filter, setFilter] = useState('')
   const [sort, setSort] = useState('newest') // newest|oldest|az|za|pinned
   const [error, setError] = useState('')
-  const [theme, setTheme] = useState(() => {
-    try {
-      return localStorage.getItem('theme') || 'dark'
-    } catch {
-      return 'dark'
-    }
-  })
-
-  useEffect(() => {
-    try {
-      document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark')
-      localStorage.setItem('theme', theme)
-    } catch {}
-  }, [theme])
 
   // helper to seed samples
   const buildSamples = () => {
@@ -287,45 +273,7 @@ export default function VideoManager() {
   }
 
   const onDelete = (id) => setItems(items.filter((it) => it.id !== id))
-  const onPinToggle = (id) => setItems(items.map((it) => (it.id === id ? { ...it, pinned: !it.pinned } : it)))
   const onUpdate = (id, patch) => setItems(items.map((it) => (it.id === id ? { ...it, ...patch } : it)))
-
-  // Import/Export
-  const onExport = () => {
-    const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = 'myvideo-export.json'
-    a.click()
-    URL.revokeObjectURL(a.href)
-  }
-  const onImport = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      try {
-        const data = JSON.parse(reader.result)
-        if (Array.isArray(data)) {
-          // minimal validation
-          const sanitized = data.map((d) => ({
-            id: d.id || crypto.randomUUID(),
-            url: normalizeUrl(d.url || ''),
-            createdAt: d.createdAt || new Date().toISOString(),
-            pinned: !!d.pinned,
-            title: d.title || '',
-            thumbnail: d.thumbnail || '',
-            provider: d.provider || '',
-            tags: Array.isArray(d.tags) ? d.tags.slice(0, 10) : [],
-            note: typeof d.note === 'string' ? d.note : ''
-          }))
-          setItems(sanitized)
-        }
-      } catch {}
-    }
-    reader.readAsText(file)
-    e.target.value = ''
-  }
 
   // Handle Web Share Target (GET): /?title=...&text=...&url=...
   useEffect(() => {
@@ -402,22 +350,8 @@ export default function VideoManager() {
           <option value="oldest">오래된순</option>
           <option value="az">A→Z</option>
           <option value="za">Z→A</option>
-          <option value="pinned">핀 고정 우선</option>
         </select>
         <div className="toolbar-actions">
-          <button
-            className="btn"
-            type="button"
-            onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
-            title="라이트/다크 테마 전환"
-          >
-            {theme === 'light' ? '다크 테마' : '라이트 테마'}
-          </button>
-          <button className="btn" onClick={onExport} type="button">Export JSON</button>
-          <label className="btn" role="button">
-            Import JSON
-            <input type="file" accept="application/json" onChange={onImport} hidden />
-          </label>
           <button
             className="btn"
             type="button"
@@ -466,44 +400,8 @@ export default function VideoManager() {
               </div>
             </div>
             <div className="actions">
-              <button className="btn" onClick={async () => {
-                const meta = await fetchOEmbed(it.url)
-                if (meta) onUpdate(it.id, meta)
-              }}>메타 새로고침</button>
-              <button className="btn" onClick={() => onPinToggle(it.id)}>{it.pinned ? '핀 해제' : '핀 고정'}</button>
-              <button className="btn" onClick={() => navigator.clipboard.writeText(it.url)}>복사</button>
               <button className="btn" onClick={() => onDelete(it.id)}>삭제</button>
             </div>
-            <details className="editor">
-              <summary>편집</summary>
-              <div className="editor-grid">
-                <div>
-                  <label>태그(쉼표로 구분)</label>
-                  <input
-                    type="text"
-                    placeholder="예: music, tutorial"
-                    defaultValue={(it.tags || []).join(', ')}
-                    onBlur={(e) => {
-                      const tags = e.target.value
-                        .split(',')
-                        .map((s) => s.trim())
-                        .filter(Boolean)
-                        .slice(0, 10)
-                      onUpdate(it.id, { tags })
-                    }}
-                  />
-                </div>
-                <div>
-                  <label>메모</label>
-                  <textarea
-                    rows={3}
-                    placeholder="메모를 입력하세요"
-                    defaultValue={it.note || ''}
-                    onBlur={(e) => onUpdate(it.id, { note: e.target.value })}
-                  />
-                </div>
-              </div>
-            </details>
           </li>
         ))}
         {filtered.length === 0 && (
