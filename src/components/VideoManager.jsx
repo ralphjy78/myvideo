@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 
 const STORAGE_KEY = 'myvideo.urls.v2'
 const FIRST_RUN_KEY = 'myvideo.firstRunSeeded.v2'
+const DEFAULT_CATEGORIES = ['일상', '스포츠', '금융', '예술', 'IT']
 
 // -------- URL helpers --------
 function isValidHttpUrl(value) {
@@ -162,6 +163,10 @@ export default function VideoManager() {
   const [filter, setFilter] = useState('')
   const [sort, setSort] = useState('newest') // newest|oldest|az|za|pinned
   const [error, setError] = useState('')
+  const [categories] = useState(DEFAULT_CATEGORIES)
+  const [catFilter, setCatFilter] = useState('all')
+  const [moveCat, setMoveCat] = useState(DEFAULT_CATEGORIES[0])
+  const [selected, setSelected] = useState(() => new Set())
 
   // helper to seed samples
   const buildSamples = () => {
@@ -178,7 +183,7 @@ export default function VideoManager() {
           'https://www.dailymotion.com/video/x7u5g1g'
         ]
     const now = new Date().toISOString()
-    return samples.map((s) => ({
+    return samples.map((s, idx) => ({
       id: crypto.randomUUID(),
       url: normalizeUrl(s),
       createdAt: now,
@@ -187,7 +192,8 @@ export default function VideoManager() {
       thumbnail: '',
       provider: '',
       tags: [],
-      note: ''
+      note: '',
+      category: categories[idx % categories.length]
     }))
   }
 
@@ -252,7 +258,7 @@ export default function VideoManager() {
       return false
     }
     const now = new Date().toISOString()
-    const newItem = { id: crypto.randomUUID(), url: normalized, createdAt: now, pinned: false, title: '', thumbnail: '', provider: '', tags: [], note: '' }
+    const newItem = { id: crypto.randomUUID(), url: normalized, createdAt: now, pinned: false, title: '', thumbnail: '', provider: '', tags: [], note: '', category: categories[0] }
     let added = false
     setItems((prev) => {
       if (prev.some((it) => it.url === normalized)) {
@@ -274,6 +280,22 @@ export default function VideoManager() {
 
   const onDelete = (id) => setItems(items.filter((it) => it.id !== id))
   const onUpdate = (id, patch) => setItems(items.map((it) => (it.id === id ? { ...it, ...patch } : it)))
+
+  // Selection helpers
+  const toggleSelect = (id) => {
+    setSelected((prev) => {
+      const n = new Set(prev)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
+  }
+  const clearSelection = () => setSelected(new Set())
+  const moveSelectedTo = (cat) => {
+    if (!cat || !categories.includes(cat) || selected.size === 0) return
+    setItems((prev) => prev.map((it) => (selected.has(it.id) ? { ...it, category: cat } : it)))
+    clearSelection()
+  }
 
   // Handle Web Share Target (GET): /?title=...&text=...&url=...
   useEffect(() => {
@@ -308,6 +330,9 @@ export default function VideoManager() {
         (it.tags || []).some((t) => t.toLowerCase().includes(q))
       )
     }
+    if (catFilter !== 'all') {
+      arr = arr.filter((it) => (it.category || categories[0]) === catFilter)
+    }
     const byNewest = (a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')
     const byOldest = (a, b) => (a.createdAt || '').localeCompare(b.createdAt || '')
     const byAZ = (a, b) => (a.title || a.url).localeCompare(b.title || b.url)
@@ -318,9 +343,8 @@ export default function VideoManager() {
     else if (sort === 'oldest') sorted.sort(byOldest)
     else if (sort === 'az') sorted.sort(byAZ)
     else if (sort === 'za') sorted.sort(byZA)
-    else if (sort === 'pinned') sorted.sort(byPinnedFirst)
     return sorted
-  }, [items, filter, sort])
+  }, [items, filter, sort, catFilter, categories])
 
   return (
     <section id="manager" className="container section">
@@ -339,6 +363,12 @@ export default function VideoManager() {
       {error && <p className="error" role="alert">{error}</p>}
 
       <div className="video-toolbar">
+        <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)}>
+          <option value="all">전체 카테고리</option>
+          {categories.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
         <input
           type="text"
           placeholder="검색(제목/URL/태그)"
@@ -352,6 +382,24 @@ export default function VideoManager() {
           <option value="za">Z→A</option>
         </select>
         <div className="toolbar-actions">
+          <select value={moveCat} onChange={(e) => setMoveCat(e.target.value)}>
+            {categories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <button
+            className="btn"
+            type="button"
+            onClick={() => moveSelectedTo(moveCat)}
+            title="선택 항목을 지정한 카테고리로 이동"
+            disabled={selected.size === 0}
+          >선택 항목 이동</button>
+          <button
+            className="btn"
+            type="button"
+            onClick={clearSelection}
+            disabled={selected.size === 0}
+          >선택 해제</button>
           <button
             className="btn"
             type="button"
@@ -370,6 +418,12 @@ export default function VideoManager() {
         {filtered.map((it) => (
           <li key={it.id} className="video-item">
             <div className="left">
+              <input
+                type="checkbox"
+                aria-label="선택"
+                checked={selected.has(it.id)}
+                onChange={() => toggleSelect(it.id)}
+              />
               <div className="thumb-wrap">
                 {it.thumbnail ? (
                   <img src={it.thumbnail} alt={it.title || 'thumbnail'} />
@@ -388,6 +442,8 @@ export default function VideoManager() {
                 </a>
                 <div className="sub muted">
                   {it.provider ? `${it.provider} · ` : ''}{new URL(it.url).hostname}
+                  {` · `}
+                  <span className="tag">{it.category || categories[0]}</span>
                 </div>
                 {it.tags?.length > 0 && (
                   <div className="tags">
@@ -401,6 +457,15 @@ export default function VideoManager() {
             </div>
             <div className="actions">
               <button className="btn" onClick={() => onDelete(it.id)}>삭제</button>
+              <select
+                value={it.category || categories[0]}
+                onChange={(e) => onUpdate(it.id, { category: e.target.value })}
+                title="카테고리 변경"
+              >
+                {categories.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
           </li>
         ))}
