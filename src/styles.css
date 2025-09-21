@@ -3,18 +3,24 @@
 html,body,#root{ height:100%; }
 body{ margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Apple Color Emoji','Segoe UI Emoji'; background:var(--bg); color:var(--text); }
 
-.container{ width:min(1120px, 92vw); margin:0 auto; }
+.container{ width:min(1120px, 92vw); margin:0 auto; padding:0 12px; }
 .header{ display:flex; align-items:center; justify-content:space-between; padding:18px 0; position:sticky; top:0; background:linear-gradient(180deg, rgba(11,14,20,0.95), rgba(11,14,20,0.6) 70%, transparent); backdrop-filter:saturate(160%) blur(6px); }
 .logo{ font-weight:700; letter-spacing:0.5px; }
 .nav a{ color:var(--muted); margin-left:18px; text-decoration:none; }
 .nav a:hover{ color:var(--text); }
+
+/* Hide mobile menu toggle on desktop by default */
+.nav-toggle{ display:none; }
+
+/* Light theme variables */
+[data-theme="light"]{ --bg:#f7f9fc; --panel:#ffffff; --text:#101828; --muted:#667085; --primary:#3a6bff; --primary-2:#2f57d9; --card:#ffffff; }
 
 .hero{ padding:72px 0 48px; background:radial-gradient(1200px 600px at 10% -10%, rgba(91,140,255,0.25), transparent), radial-gradient(800px 400px at 90% 0%, rgba(58,107,255,0.2), transparent); }
 .hero-inner{ text-align:center; }
 .hero h1{ font-size:48px; line-height:1.1; margin:0 0 12px; }
 .hero p{ margin:0 auto 24px; color:var(--muted); max-width:720px; }
 .cta{ display:flex; gap:12px; justify-content:center; }
-.btn{ padding:10px 16px; border-radius:10px; border:1px solid rgba(231,237,242,0.12); color:var(--text); background:transparent; text-decoration:none; display:inline-block; }
+.btn{ padding:10px 16px; min-height:44px; border-radius:10px; border:1px solid rgba(231,237,242,0.12); color:var(--text); background:transparent; text-decoration:none; display:inline-block; }
 .btn.primary{ background:linear-gradient(180deg, var(--primary), var(--primary-2)); border:none; }
 .btn:hover{ filter:brightness(1.05); }
 
@@ -30,7 +36,7 @@ body{ margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Noto San
 
 .contact-form{ display:grid; gap:12px; max-width:560px; }
 .row{ display:grid; gap:8px; }
-input, textarea{ padding:12px; border-radius:10px; border:1px solid rgba(231,237,242,0.12); background:rgba(255,255,255,0.02); color:var(--text); }
+input, textarea{ padding:12px; min-height:44px; border-radius:10px; border:1px solid rgba(231,237,242,0.12); background:rgba(255,255,255,0.02); color:var(--text); }
 
 /* Video Manager */
 .video-form{ display:flex; gap:10px; margin:12px 0 8px; }
@@ -71,4 +77,51 @@ select{ padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.02)
   .hero h1{ font-size:36px; }
   .title{ max-width:100%; }
   .editor-grid{ grid-template-columns:1fr; }
+}
+
+/* Mobile-first refinements */
+@media (max-width: 640px){
+  .hero h1{ font-size:30px; }
+  .hero p{ padding:0 8px; }
+  .cta{ flex-direction:column; align-items:stretch; }
+  .cta .btn{ width:100%; text-align:center; }
+
+  .video-form{ flex-direction:column; }
+  .video-form input[type="url"]{ min-width:0; width:100%; }
+  .video-form .btn{ width:100%; }
+
+  .video-toolbar{ flex-direction:column; align-items:stretch; gap:8px; }
+  .video-toolbar input{ max-width:none; width:100%; }
+  .video-toolbar select{ width:100%; }
+  .toolbar-actions{ flex-wrap:wrap; }
+  .toolbar-actions .btn{ flex:1 1 calc(50% - 6px); min-width:140px; }
+
+  .video-item{ flex-direction:column; align-items:stretch; gap:10px; }
+  .video-item .left{ align-items:flex-start; }
+  .thumb-wrap{ width:100%; height:auto; aspect-ratio:16 / 9; }
+  .meta .title{ white-space:normal; }
+  .video-item .actions{ flex-wrap:wrap; }
+  .video-item .actions .btn{ flex:1 1 calc(50% - 6px); min-width:140px; }
+}
+
+@media (max-width: 400px){
+  .btn{ padding:10px 14px; }
+  .section{ padding:40px 0; }
+  .video-item{ padding:12px; }
+  .toolbar-actions .btn,
+  .video-item .actions .btn{ flex:1 1 100%; min-width:0; }
+}
+
+/* Header mobile menu */
+@media (max-width: 640px){
+  .nav{ position:absolute; right:12px; top:60px; background:var(--panel); border:1px solid rgba(231,237,242,0.12); border-radius:10px; padding:8px 10px; display:none; flex-direction:column; gap:8px; }
+  .nav.open{ display:flex; }
+  .nav a{ margin:0; }
+  .nav-toggle{ display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; border:1px solid rgba(231,237,242,0.12); background:rgba(255,255,255,0.02); color:var(--text); }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .btn:hover{ filter:none; }
+  .thumb-skeleton{ animation:none; }
 }
