@@ -162,6 +162,20 @@ export default function VideoManager() {
   const [filter, setFilter] = useState('')
   const [sort, setSort] = useState('newest') // newest|oldest|az|za|pinned
   const [error, setError] = useState('')
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('theme') || 'dark'
+    } catch {
+      return 'dark'
+    }
+  })
+
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark')
+      localStorage.setItem('theme', theme)
+    } catch {}
+  }, [theme])
 
   // helper to seed samples
   const buildSamples = () => {
@@ -391,6 +405,14 @@ export default function VideoManager() {
           <option value="pinned">핀 고정 우선</option>
         </select>
         <div className="toolbar-actions">
+          <button
+            className="btn"
+            type="button"
+            onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
+            title="라이트/다크 테마 전환"
+          >
+            {theme === 'light' ? '다크 테마' : '라이트 테마'}
+          </button>
           <button className="btn" onClick={onExport} type="button">Export JSON</button>
           <label className="btn" role="button">
             Import JSON
